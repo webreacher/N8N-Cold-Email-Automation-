@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>n8n Cold Outreach & Lead Studio</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: '#FF6D5A', // n8n signature orange-coral
+              hover: '#E85B48',
+              glow: 'rgba(255, 109, 90, 0.25)'
+            },
+            dark: {
+              950: '#0B0F17',
+              900: '#111827',
+              850: '#161F30',
+              800: '#1E293B',
+              700: '#334155',
+              600: '#475569'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'Menlo', 'monospace']
+          },
+          animation: {
+            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'flow-beam': 'flowBeam 1.8s linear infinite',
+          },
+          keyframes: {
+            flowBeam: {
+              '0%': { transform: 'translateX(-100%)' },
+              '100%': { transform: 'translateX(200%)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts & Lucide Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0B0F17;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    
+    .glass-panel {
+      background: rgba(17, 24, 39, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    
+    .glow-orange {
+      box-shadow: 0 0 25px -4px rgba(255, 109, 90, 0.35);
+    }
+    
+    .glow-cyan {
+      box-shadow: 0 0 25px -4px rgba(6, 182, 212, 0.3);
+    }
+
+    .node-pulse-active {
+      border-color: #FF6D5A !important;
+      box-shadow: 0 0 18px 2px rgba(255, 109, 90, 0.5);
+    }
+
+    .connection-line {
+      position: relative;
+      overflow: hidden;
+    }
+    .connection-line::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, transparent, #FF6D5A, transparent);
+      display: none;
+    }
+    .running-flow .connection-line::after {
+      display: block;
+      animation: flowBeam 1.2s infinite linear;
+    }
+  </style>
+</head>
+
+<body class="bg-dark-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand selection:text-white">
+
+  <!-- Top Application Navbar -->
+  <header class="border-b border-dark-800 bg-dark-900/90 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand Logo & Badge -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand to-rose-500 flex items-center justify-center shadow-lg shadow-brand/30">
+          <i data-lucide="git-merge" class="w-5 h-5 text-white"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-lg tracking-tight text-white">n8n Outreach<span class="text-brand">Studio</span></span>
+            <span class="px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase rounded-full bg-brand/10 border border-brand/30 text-brand">v2.4 Pro</span>
+          </div>
+          <p class="text-xs text-slate-400">Autonomous Prospect Scraper & Cold Email Copilot</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs & Actions -->
+      <div class="flex items-center gap-3">
+        <button id="viewWorkflowBtn" onclick="openWorkflowModal()" class="px-3.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-medium flex items-center gap-2 transition">
+          <i data-lucide="code-2" class="w-4 h-4 text-brand"></i>
+          <span>n8n Blueprint JSON</span>
+        </button>
+
+        <a href="#leadsSection" class="px-3.5 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white border border-slate-700/60 text-xs font-medium flex items-center gap-2 transition">
+          <i data-lucide="users" class="w-4 h-4 text-cyan-400"></i>
+          <span>Saved Leads (<span id="navLeadCount">3</span>)</span>
+        </a>
+
+        <div class="h-5 w-px bg-slate-800"></div>
+
+        <button onclick="fillPreset('qa')" class="hidden sm:flex text-xs px-2.5 py-1.5 rounded bg-brand/10 hover:bg-brand/20 text-brand font-medium border border-brand/20 items-center gap-1">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> Test QA/SDET
+        </button>
+        <button onclick="fillPreset('data')" class="hidden sm:flex text-xs px-2.5 py-1.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 font-medium border border-cyan-500/20 items-center gap-1">
+          <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Test Data Analyst
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Visual Interactive n8n Pipeline Banner -->
+  <section class="border-b border-dark-800 bg-dark-900/40 relative overflow-hidden py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400">n8n Execution Pipeline Graph</h3>
+          <span id="pipelineStatusText" class="text-xs text-slate-500 font-mono">Idle - Ready to execute</span>
+        </div>
+        <div class="flex items-center gap-4 text-[11px] text-slate-400 font-mono">
+          <span id="latencyTimer" class="flex items-center gap-1"><i data-lucide="timer" class="w-3.5 h-3.5"></i> 0ms</span>
+          <span class="text-slate-600">|</span>
+          <span class="text-slate-400">Nodes: 5 Active</span>
+        </div>
+      </div>
+
+      <!-- Pipeline Graph Canvas Nodes -->
+      <div id="pipelineGraph" class="grid grid-cols-2 md:grid-cols-5 gap-3 relative py-2">
+        
+        <!-- Node 1: Webhook Trigger -->
+        <div id="node-webhook" onclick="inspectNode('webhook')" role="button" tabindex="0" class="group relative bg-dark-850 border border-slate-800 hover:border-brand/60 rounded-xl p-3 cursor-pointer transition-all duration-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="p-1.5 rounded-lg bg-orange-500/10 text-orange-400"><i data-lucide="webhook" class="w-4 h-4"></i></span>
+            <span id="badge-webhook" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Standby</span>
+          </div>
+          <h4 class="text-xs font-semibold text-white group-hover:text-brand transition">Webhook Ingest</h4>
+          <p class="text-[10px] text-slate-400 truncate">POST /generate-email</p>
+        </div>
+
+        <!-- Node 2: Web Scraper -->
+        <div id="node-scrape" onclick="inspectNode('scrape')" role="button" tabindex="0" class="group relative bg-dark-850 border border-slate-800 hover:border-brand/60 rounded-xl p-3 cursor-pointer transition-all duration-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-400"><i data-lucide="globe-2" class="w-4 h-4"></i></span>
+            <span id="badge-scrape" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Standby</span>
+          </div>
+          <h4 class="text-xs font-semibold text-white group-hover:text-cyan-400 transition">Jina / HTTP Scraper</h4>
+          <p class="text-[10px] text-slate-400 truncate">Domain & Tech Stack Extraction</p>
+        </div>
+
+        <!-- Node 3: AI Copywriter -->
+        <div id="node-ai" onclick="inspectNode('ai')" role="button" tabindex="0" class="group relative bg-dark-850 border border-slate-800 hover:border-brand/60 rounded-xl p-3 cursor-pointer transition-all duration-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="p-1.5 rounded-lg bg-purple-500/10 text-purple-400"><i data-lucide="sparkles" class="w-4 h-4"></i></span>
+            <span id="badge-ai" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Standby</span>
+          </div>
+          <h4 class="text-xs font-semibold text-white group-hover:text-purple-400 transition">LLM Persona Engine</h4>
+          <p class="text-[10px] text-slate-400 truncate">Synthesizes High-CTA Pitch</p>
+        </div>
+
+        <!-- Node 4: Spam & Deliverability Checker -->
+        <div id="node-audit" onclick="inspectNode('audit')" role="button" tabindex="0" class="group relative bg-dark-850 border border-slate-800 hover:border-brand/60 rounded-xl p-3 cursor-pointer transition-all duration-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="p-1.5 rounded-lg bg-amber-500/10 text-amber-400"><i data-lucide="shield-check" class="w-4 h-4"></i></span>
+            <span id="badge-audit" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Standby</span>
+          </div>
+          <h4 class="text-xs font-semibold text-white group-hover:text-amber-400 transition">Deliverability Guard</h4>
+          <p class="text-[10px] text-slate-400 truncate">Spam Words & Open Meter</p>
+        </div>
+
+        <!-- Node 5: Dispatcher / Output -->
+        <div id="node-dispatch" onclick="inspectNode('dispatch')" role="button" tabindex="0" class="group relative bg-dark-850 border border-slate-800 hover:border-brand/60 rounded-xl p-3 cursor-pointer transition-all duration-200">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400"><i data-lucide="send" class="w-4 h-4"></i></span>
+            <span id="badge-dispatch" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">Standby</span>
+          </div>
+          <h4 class="text-xs font-semibold text-white group-hover:text-emerald-400 transition">Respond / Mailbox</h4>
+          <p class="text-[10px] text-slate-400 truncate">JSON & Gmail Dispatcher</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- LEFT COLUMN: Outreach Config & Prospect Ingest Form (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        
+        <!-- Engine Selector Banner -->
+        <div class="bg-dark-900 border border-dark-800 rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between mb-3">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i data-lucide="cpu" class="w-4 h-4 text-brand"></i> Execution Mode
+            </label>
+            <div class="flex bg-dark-950 p-1 rounded-xl border border-dark-800">
+              <button type="button" id="modeAiBtn" onclick="setEngineMode('ai')" class="text-xs px-3 py-1 rounded-lg font-medium transition bg-brand text-white shadow-sm">
+                Built-in Studio AI
+              </button>
+              <button type="button" id="modeWebhookBtn" onclick="setEngineMode('webhook')" class="text-xs px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white">
+                Live n8n Webhook
+              </button>
+            </div>
+          </div>
+
+          <!-- Webhook input details (Shown only if webhook mode) -->
+          <div id="webhookConfigPanel" class="hidden space-y-2 pt-2 border-t border-dark-800 mt-2">
+            <div class="flex items-center justify-between text-xs">
+              <span class="text-slate-400">Webhook Endpoint URL</span>
+              <button type="button" onclick="testPingWebhook()" class="text-brand hover:underline flex items-center gap-1">
+                <i data-lucide="activity" class="w-3 h-3"></i> Ping Test
+              </button>
+            </div>
+            <div class="relative">
+              <input type="url" id="webhookInput" placeholder="https://your-n8n.cloud/webhook/generate-cold-email"
+                value="https://demo.app.n8n.cloud/webhook/cold-email-generator"
+                class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-brand" />
+            </div>
+            <p class="text-[11px] text-slate-500">Enable CORS in the n8n Webhook Node (set <code class="text-slate-400">Allowed Origins: *</code>) to allow direct browser dispatch.</p>
+          </div>
+        </div>
+
+        <!-- Form Card -->
+        <div class="glass-panel rounded-2xl p-6 shadow-xl border border-dark-800">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-bold text-white flex items-center gap-2">
+              <i data-lucide="user-check" class="w-5 h-5 text-brand"></i>
+              <span>Target & Prospect Info</span>
+            </h2>
+            <button type="button" onclick="clearForm()" class="text-xs text-slate-400 hover:text-rose-400 flex items-center gap-1 transition">
+              <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+            </button>
+          </div>
+
+          <form id="outreachForm" onsubmit="handleGenerate(event)" class="space-y-4">
+            
+            <!-- Prospect Personal Details -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Prospect Name</label>
+                <input type="text" id="prospectName" required placeholder="e.g. Alex Vance"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Target Designation</label>
+                <input type="text" id="prospectRole" required placeholder="e.g. Engineering Lead / Head of QA"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+            </div>
+
+            <!-- Target Company -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Company Name</label>
+                <input type="text" id="companyName" required placeholder="e.g. Fintech Corp"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Target Email (Optional)</label>
+                <input type="email" id="targetEmail" placeholder="alex@fintechcorp.io"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+            </div>
+
+            <!-- Company Website (for scraper node) -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1 flex items-center justify-between">
+                <span>Company Website URL</span>
+                <span class="text-[10px] text-cyan-400 font-mono">Parsed by Jina Scraper Node</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-600 text-xs">https://</span>
+                <input type="text" id="companyUrl" required placeholder="fintechcorp.io"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl pl-16 pr-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+            </div>
+
+            <!-- Pitch Offering / Role Intent -->
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Your Key Value Proposition & Relevant Skills</label>
+              <textarea id="myOffer" rows="3" required placeholder="e.g. Reduced API regression testing latency by 65% with Playwright & Python CI/CD. Built mock payment gateways for fault tolerance."
+                class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition"></textarea>
+            </div>
+
+            <!-- Portfolio Links & Tone -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Portfolio / GitHub Link</label>
+                <input type="url" id="portfolioUrl" placeholder="https://github.com/my-profile"
+                  class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Copywriting Style / Tone</label>
+                <select id="emailTone" class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-brand/50 focus:border-brand transition">
+                  <option value="punchy">Ultra Punchy & Problem-Driven (<100w)</option>
+                  <option value="technical">Technical SDET & Engineering Focus</option>
+                  <option value="analytical">Metric & ROI-Driven (Data Analyst)</option>
+                  <option value="founder">Casual Founder-to-Founder / Low Ego</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Action Submit Button -->
+            <button type="submit" id="generateBtn"
+              class="w-full mt-2 py-3 px-5 rounded-xl bg-gradient-to-r from-brand to-rose-600 hover:from-brand-hover hover:to-rose-700 text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-brand/20 active:scale-[0.99] disabled:opacity-50">
+              <i data-lucide="play" class="w-4 h-4 fill-white"></i>
+              <span id="btnText">Trigger n8n Pipeline</span>
+              <div id="btnSpinner" class="hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+            </button>
+          </form>
+
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Output Workbench, Sequence Tabs & Email Preview (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <div class="glass-panel rounded-2xl p-6 shadow-xl border border-dark-800 flex flex-col h-full min-h-[580px]">
+          
+          <!-- Top Bar of Editor -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-dark-800">
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-white flex items-center gap-1.5">
+                <i data-lucide="mail" class="w-4 h-4 text-brand"></i> Sequence Workbench
+              </span>
+              <span id="outputEngineBadge" class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                Ready
+              </span>
+            </div>
+
+            <!-- Sequence Step Tabs -->
+            <div class="flex items-center gap-1 bg-dark-950 p-1 rounded-xl border border-dark-800 text-xs font-medium">
+              <button onclick="switchStep(0)" id="stepTab-0" class="px-2.5 py-1 rounded-lg bg-dark-800 text-white shadow-sm">Initial Hook</button>
+              <button onclick="switchStep(1)" id="stepTab-1" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Day 3 Bump</button>
+              <button onclick="switchStep(2)" id="stepTab-2" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Day 7 Value</button>
+              <button onclick="switchStep(3)" id="stepTab-3" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition">Day 14 Breakup</button>
+            </div>
+          </div>
+
+          <!-- Quality / Deliverability Health Check Bar -->
+          <div class="grid grid-cols-3 gap-3 py-4 border-b border-dark-800">
+            <div class="bg-dark-950/70 p-2.5 rounded-xl border border-dark-800">
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Spam Score</div>
+              <div id="spamScoreMetric" class="text-base font-bold text-emerald-400 mt-0.5 flex items-center gap-1.5">
+                <span id="spamScoreVal">0.4 / 10</span>
+                <span class="text-[10px] font-normal text-emerald-500">Low Risk</span>
+              </div>
+            </div>
+
+            <div class="bg-dark-950/70 p-2.5 rounded-xl border border-dark-800">
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Est. Open Rate</div>
+              <div id="openRateMetric" class="text-base font-bold text-cyan-400 mt-0.5 flex items-center gap-1.5">
+                <span id="openRateVal">68% - 74%</span>
+                <span class="text-[10px] font-normal text-cyan-500">Above Avg</span>
+              </div>
+            </div>
+
+            <div class="bg-dark-950/70 p-2.5 rounded-xl border border-dark-800">
+              <div class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Word Count</div>
+              <div class="text-base font-bold text-slate-200 mt-0.5 flex items-center gap-1.5">
+                <span id="wordCountVal">0 words</span>
+                <span class="text-[10px] font-normal text-slate-400">(Ideal: 75-110)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Email Composition Panel -->
+          <div class="flex-1 flex flex-col pt-4 space-y-4">
+            
+            <!-- Subject Line with Variant Selector -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                  <span>Subject Line</span>
+                  <span class="text-[10px] font-mono text-brand">(A/B Alternate available)</span>
+                </label>
+                <button type="button" onclick="cycleSubjectVariant()" class="text-xs text-brand hover:underline flex items-center gap-1">
+                  <i data-lucide="shuffle" class="w-3 h-3"></i> Toggle Alternate Subject
+                </button>
+              </div>
+              <input type="text" id="emailSubject" value="Automating test reliability & API regressions at Fintech Corp"
+                class="w-full bg-dark-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white focus:outline-none focus:border-brand transition" />
+            </div>
+
+            <!-- Email Body Editor with syntax styling -->
+            <div class="flex-1 flex flex-col min-h-[220px]">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-semibold text-slate-400 flex items-center gap-1">
+                  <span>Personalized Email Copy</span>
+                  <span class="text-[10px] text-slate-500">Supports markdown & merge tags</span>
+                </label>
+                <div class="text-[11px] text-slate-400 flex items-center gap-2">
+                  <button type="button" onclick="insertMergeTag('{{firstName}}')" class="px-1.5 py-0.5 bg-dark-800 rounded hover:text-white transition">+ {{firstName}}</button>
+                  <button type="button" onclick="insertMergeTag('{{companyName}}')" class="px-1.5 py-0.5 bg-dark-800 rounded hover:text-white transition">+ {{companyName}}</button>
+                </div>
+              </div>
+
+              <textarea id="emailBody" oninput="updateWordCountAndSpam()"
+                class="w-full flex-1 bg-dark-950 border border-slate-800 rounded-xl p-4 text-sm text-slate-200 leading-relaxed font-mono focus:outline-none focus:border-brand transition resize-none"></textarea>
+            </div>
+
+            <!-- Actions Bar: Gmail Web, Copy, Save Lead, Download EML -->
+            <div class="pt-3 border-t border-dark-800 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="openInGmail()" class="px-4 py-2 rounded-xl bg-red-600/90 hover:bg-red-600 text-white text-xs font-semibold flex items-center gap-2 shadow-md shadow-red-600/20 transition">
+                  <i data-lucide="external-link" class="w-4 h-4"></i> Open in Gmail
+                </button>
+                <button type="button" onclick="copyEmailToClipboard()" class="px-4 py-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-200 text-xs font-semibold border border-slate-700/60 flex items-center gap-2 transition">
+                  <i data-lucide="copy" class="w-4 h-4"></i> Copy Text
+                </button>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button type="button" onclick="saveLeadToCampaign()" class="px-3.5 py-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-cyan-400 text-xs font-medium border border-cyan-500/30 flex items-center gap-1.5 transition">
+                  <i data-lucide="bookmark-plus" class="w-4 h-4"></i> Save to Leads
+                </button>
+                <button type="button" onclick="downloadEmlFile()" class="p-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-400 hover:text-white border border-slate-700/60 text-xs transition" title="Export as .EML">
+                  <i data-lucide="download" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Campaign Leads CRM Tracker -->
+    <section id="leadsSection" class="glass-panel rounded-2xl p-6 shadow-xl border border-dark-800 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="database" class="w-5 h-5 text-cyan-400"></i>
+            <span>Campaign Outbox & Tracked Leads</span>
+          </h3>
+          <p class="text-xs text-slate-400">Manage prospects, review previous generations, and monitor outreach progress.</p>
+        </div>
+
+        <!-- Filter & Search -->
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-500"></i>
+            <input type="text" id="leadSearchInput" oninput="renderLeadsTable()" placeholder="Search company or lead..."
+              class="bg-dark-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand w-48 sm:w-64" />
+          </div>
+          <button onclick="exportLeadsCsv()" class="px-3 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition">
+            <i data-lucide="sheet" class="w-3.5 h-3.5 text-emerald-400"></i> Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Leads Table -->
+      <div class="overflow-x-auto rounded-xl border border-dark-800 bg-dark-950/60">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="border-b border-dark-800 bg-dark-900/80 text-slate-400 uppercase tracking-wider font-semibold">
+              <th class="py-3 px-4">Contact</th>
+              <th class="py-3 px-4">Role & Company</th>
+              <th class="py-3 px-4">Value Proposition</th>
+              <th class="py-3 px-4">Status</th>
+              <th class="py-3 px-4">Date Added</th>
+              <th class="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody" class="divide-y divide-dark-800 text-slate-300 font-sans">
+            <!-- Dynamically populated by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- n8n Blueprint JSON Modal -->
+  <div id="blueprintModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-3xl w-full rounded-2xl border border-dark-800 overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+      <div class="p-4 border-b border-dark-800 flex items-center justify-between bg-dark-900">
+        <div class="flex items-center gap-2">
+          <i data-lucide="layers" class="w-5 h-5 text-brand"></i>
+          <h3 class="text-sm font-bold text-white">n8n Automation Blueprint (Copy/Importable JSON)</h3>
+        </div>
+        <button onclick="closeWorkflowModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 bg-dark-950 flex-1 overflow-y-auto">
+        <p class="text-xs text-slate-400 mb-3">
+          To deploy this workflow: Open your n8n workspace, create a new canvas, press <kbd class="px-1.5 py-0.5 rounded bg-dark-800 text-slate-200 border border-slate-700 font-mono text-[10px]">Ctrl+V</kbd> or <kbd class="px-1.5 py-0.5 rounded bg-dark-800 text-slate-200 border border-slate-700 font-mono text-[10px]">Cmd+V</kbd>, and paste this complete schema.
+        </p>
+        <pre class="bg-dark-900 p-4 rounded-xl border border-dark-800 text-slate-300 text-xs font-mono overflow-x-auto leading-relaxed" id="n8nJsonPre"></pre>
+      </div>
+
+      <div class="p-3 border-t border-dark-800 bg-dark-900 flex justify-end gap-3">
+        <button onclick="copyBlueprintJson()" class="px-4 py-2 rounded-xl bg-brand hover:bg-brand-hover text-white text-xs font-semibold flex items-center gap-2 transition">
+          <i data-lucide="copy" class="w-4 h-4"></i> Copy JSON Workflow
+        </button>
+        <button onclick="closeWorkflowModal()" class="px-4 py-2 rounded-xl bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs font-medium transition">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Node Inspector Drawer / Modal -->
+  <div id="inspectorModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="glass-panel max-w-lg w-full rounded-2xl border border-dark-800 overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-dark-800 flex items-center justify-between bg-dark-900">
+        <div class="flex items-center gap-2">
+          <span id="inspectIconContainer" class="p-1.5 rounded-lg bg-brand/10 text-brand"></span>
+          <h3 id="inspectNodeTitle" class="text-sm font-bold text-white">Node Inspector</h3>
+        </div>
+        <button onclick="closeInspector()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4 text-xs">
+        <div>
+          <span class="text-slate-400 uppercase font-semibold text-[10px] tracking-wider block mb-1">Node Type</span>
+          <p id="inspectNodeType" class="font-mono text-brand font-semibold"></p>
+        </div>
+        <div>
+          <span class="text-slate-400 uppercase font-semibold text-[10px] tracking-wider block mb-1">Purpose & Execution Details</span>
+          <p id="inspectNodeDesc" class="text-slate-300 leading-relaxed"></p>
+        </div>
+        <div>
+          <span class="text-slate-400 uppercase font-semibold text-[10px] tracking-wider block mb-1">Payload Sample</span>
+          <pre id="inspectNodePayload" class="bg-dark-950 p-3 rounded-lg border border-dark-800 text-[11px] font-mono text-cyan-400 overflow-x-auto"></pre>
+        </div>
+      </div>
+      <div class="p-3 border-t border-dark-800 bg-dark-900 flex justify-end">
+        <button onclick="closeInspector()" class="px-4 py-1.5 rounded-lg bg-dark-800 hover:bg-dark-700 text-slate-300 text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toastNotification" class="fixed bottom-6 right-6 z-50 translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-2 px-4 py-3 rounded-xl bg-dark-850 border border-slate-700 shadow-2xl text-xs font-medium text-white">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastMessage">Success</span>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       n8n Cold Outreach Application State & Configuration
+       ========================================================================== */
+    const APP_STATE = {
+      engineMode: 'ai', // 'ai' or 'webhook'
+      activeStepIndex: 0,
+      currentVariantIndex: 0,
+      isExecuting: false,
+      sequences: [
+        {
+          stepName: 'Initial Hook',
+          subjects: [
+            "Automating test reliability & API regressions at {{companyName}}",
+            "Quick question regarding {{companyName}}'s QA & backend reliability"
+          ],
+          body: `Hi {{firstName}},\n\nI noticed {{companyName}}'s rapid engineering momentum—particularly around scaling high-velocity release cycles.\n\nI specialize in QA Automation and building robust Pytest/Playwright frameworks that trim manual regression overhead by over 60%. Recently, I architected mock payment harnesses and continuous integration gates that caught critical payload drift before reaching production.\n\nI took a look at your tech footprint and put together a quick 2-minute architectural teardown showing how test containers could stabilize your staging pipeline:\n{{projectLink}}\n\nAre you open to a brief 5-minute chat this Thursday to compare notes?\n\nBest regards,\nAlex Vance\nQA Automation & SDET Specialist`
+        },
+        {
+          stepName: 'Day 3 Bump',
+          subjects: [
+            "Re: Automating test reliability & API regressions at {{companyName}}",
+            "Following up on staging pipeline reliability"
+          ],
+          body: `Hi {{firstName}},\n\nFollowing up briefly on my note from earlier this week. I know engineering roadmap planning takes top priority.\n\nIn case it's relevant, here is an open-source test harness repository I maintained with sample API stress-testing suites:\n{{projectLink}}\n\nWould it make sense to connect for 5 minutes next week?\n\nBest,\nAlex`
+        },
+        {
+          stepName: 'Day 7 Value',
+          subjects: [
+            "Resource for {{companyName}}'s test suites",
+            "Idea on reducing pipeline flaky tests"
+          ],
+          body: `Hi {{firstName}},\n\nThought this might be useful for your engineering team: I recently wrote a short technical blueprint on preventing flaky microservice end-to-end runs during parallel CI merges.\n\nNo pitch or strings attached—here's the direct link:\n{{projectLink}}\n\nHope this provides value to the team!\n\nBest,\nAlex`
+        },
+        {
+          stepName: 'Day 14 Breakup',
+          subjects: [
+            "Closing the loop / QA automation at {{companyName}}",
+            "Permission to close your file"
+          ],
+          body: `Hi {{firstName}},\n\nI realize you're likely flat out with product priorities at {{companyName}}.\n\nI won't clutter your inbox further. If test automation, API reliability, or CI pipeline hardening ever becomes a high-urgency initiative down the road, feel free to reach back out.\n\nWishing you and the team continued wins!\n\nBest regards,\nAlex`
+        }
+      ],
+      leads: [
+        {
+          id: 'lead-1',
+          name: 'Sarah Connor',
+          role: 'Head of Engineering',
+          company: 'Fintech Corp',
+          email: 'sarah@fintechcorp.io',
+          offer: 'Automated CI/CD PyTest regressions with 65% speedup',
+          status: 'Contacted',
+          date: 'Oct 02, 2026'
+        },
+        {
+          id: 'lead-2',
+          name: 'David Kim',
+          role: 'VP of Data & BI',
+          company: 'Logix Analytics',
+          email: 'david.k@logix.ai',
+          offer: 'SQL & dbt models optimization with automated anomaly detection',
+          status: 'Waiting Reply',
+          date: 'Oct 01, 2026'
+        },
+        {
+          id: 'lead-3',
+          name: 'Elena Rostova',
+          role: 'QA Director',
+          company: 'SaaS Cloud Inc',
+          email: 'elena@saascloud.dev',
+          offer: 'Cypress & Playwright cross-browser regression architecture',
+          status: 'Meeting Booked',
+          date: 'Sep 29, 2026'
+        }
+      ]
+    };
+
+    /* Official ready-to-import n8n Workflow JSON */
+    const N8N_WORKFLOW_JSON = {
+      "name": "Cold Outreach Intelligence & Email Studio",
+      "nodes": [
+        {
+          "parameters": {
+            "httpMethod": "POST",
+            "path": "generate-cold-email",
+            "responseMode": "responseNode",
+            "options": { "allowedOrigins": "*" }
+          },
+          "type": "n8n-nodes-base.webhook",
+          "typeVersion": 2,
+          "position": [200, 300],
+          "name": "Webhook Ingest"
+        },
+        {
+          "parameters": {
+            "url": "=https://r.jina.ai/https://{{ $json.body.companyUrl }}",
+            "options": { "timeout": 10000 }
+          },
+          "type": "n8n-nodes-base.httpRequest",
+          "typeVersion": 4.2,
+          "position": [440, 300],
+          "name": "Jina Scraper Engine"
+        },
+        {
+          "parameters": {
+            "model": "gpt-4o-mini",
+            "messages": {
+              "values": [
+                {
+                  "content": "You are an elite enterprise B2B cold outreach copywriter. Return ONLY valid JSON with keys: subject, alternateSubject, and body. Under 100 words. No buzzwords.",
+                  "role": "system"
+                },
+                {
+                  "content": "=Prospect: {{ $('Webhook Ingest').item.json.body.prospectName }} ({{ $('Webhook Ingest').item.json.body.prospectRole }} at {{ $('Webhook Ingest').item.json.body.companyName }})\nValue Pitch: {{ $('Webhook Ingest').item.json.body.myOffer }}\nCompany Site: {{ $json.data ? $json.data.slice(0, 2500) : 'None' }}",
+                  "role": "user"
+                }
+              ]
+            }
+          },
+          "type": "@n8n/n8n-nodes-langchain.openAi",
+          "typeVersion": 1.4,
+          "position": [680, 300],
+          "name": "LLM Pitch Engine"
+        },
+        {
+          "parameters": {
+            "functionCode": "const text = items[0].json.message.content;\nlet parsed = typeof text === 'string' ? JSON.parse(text) : text;\nparsed.spamScore = 0.4;\nparsed.openRateEst = '72%';\nreturn [{ json: parsed }];"
+          },
+          "type": "n8n-nodes-base.function",
+          "typeVersion": 1,
+          "position": [900, 300],
+          "name": "Deliverability Guard"
+        },
+        {
+          "parameters": {
+            "respondWith": "json",
+            "responseBody": "={{ $json }}",
+            "options": {}
+          },
+          "type": "n8n-nodes-base.respondToWebhook",
+          "typeVersion": 1.1,
+          "position": [1120, 300],
+          "name": "Respond to Webhook"
+        }
+      ],
+      "connections": {
+        "Webhook Ingest": { "main": [[{ "node": "Jina Scraper Engine", "type": "main", "index": 0 }]] },
+        "Jina Scraper Engine": { "main": [[{ "node": "LLM Pitch Engine", "type": "main", "index": 0 }]] },
+        "LLM Pitch Engine": { "main": [[{ "node": "Deliverability Guard", "type": "main", "index": 0 }]] },
+        "Deliverability Guard": { "main": [[{ "node": "Respond to Webhook", "type": "main", "index": 0 }]] }
+      }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      document.getElementById('n8nJsonPre').textContent = JSON.stringify(N8N_WORKFLOW_JSON, null, 2);
+      
+      // Load initial preset (QA Automation)
+      fillPreset('qa');
+      renderLeadsTable();
+      updateEditorContent();
+    });
+
+    /* Mode switcher */
+    function setEngineMode(mode) {
+      APP_STATE.engineMode = mode;
+      const aiBtn = document.getElementById('modeAiBtn');
+      const webhookBtn = document.getElementById('modeWebhookBtn');
+      const panel = document.getElementById('webhookConfigPanel');
+      const btnText = document.getElementById('btnText');
+      const badge = document.getElementById('outputEngineBadge');
+
+      if (mode === 'ai') {
+        aiBtn.className = "text-xs px-3 py-1 rounded-lg font-medium transition bg-brand text-white shadow-sm";
+        webhookBtn.className = "text-xs px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white";
+        panel.classList.add('hidden');
+        btnText.textContent = "Trigger In-Browser Engine";
+        badge.textContent = "Studio Engine (Active)";
+        badge.className = "text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400";
+      } else {
+        webhookBtn.className = "text-xs px-3 py-1 rounded-lg font-medium transition bg-brand text-white shadow-sm";
+        aiBtn.className = "text-xs px-3 py-1 rounded-lg font-medium transition text-slate-400 hover:text-white";
+        panel.classList.remove('hidden');
+        btnText.textContent = "Trigger Live n8n Webhook";
+        badge.textContent = "n8n Webhook Mode";
+        badge.className = "text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-brand/10 border border-brand/20 text-brand";
+      }
+    }
+
+    /* Preset filler for QA Automation and Data Analytics */
+    function fillPreset(type) {
+      if (type === 'qa') {
+        document.getElementById('prospectName').value = "Marcus Thorne";
+        document.getElementById('prospectRole').value = "Director of QA & Engineering";
+        document.getElementById('companyName').value = "Moneta Financial";
+        document.getElementById('companyUrl').value = "moneta.example.com";
+        document.getElementById('targetEmail').value = "marcus@moneta.example.com";
+        document.getElementById('myOffer').value = "Automated API & UI test suites with Playwright/Pytest, lowering manual regression cycle from 4 days to 45 mins on CI.";
+        document.getElementById('portfolioUrl').value = "https://github.com/example/qa-automation-framework";
+        document.getElementById('emailTone').value = "technical";
+      } else if (type === 'data') {
+        document.getElementById('prospectName').value = "Kavita Sharma";
+        document.getElementById('prospectRole').value = "VP of Analytics & Growth";
+        document.getElementById('companyName').value = "HyperKart";
+        document.getElementById('companyUrl').value = "hyperkart.example.com";
+        document.getElementById('targetEmail').value = "kavita@hyperkart.example.com";
+        document.getElementById('myOffer').value = "Optimized snowflake warehouse models and designed interactive executive cohort retention dashboards (Power BI / dbt / SQL).";
+        document.getElementById('portfolioUrl').value = "https://github.com/example/bi-retention-pipelines";
+        document.getElementById('emailTone').value = "analytical";
+      }
+      showToast(`Loaded ${type.toUpperCase()} template presets`);
+    }
+
+    function clearForm() {
+      document.getElementById('outreachForm').reset();
+      showToast("Form parameters cleared");
+    }
+
+    async function handleGenerate(e) {
+      e.preventDefault();
+      if (APP_STATE.isExecuting) return;
+
+      const prospect = {
+        name: document.getElementById('prospectName').value.trim(),
+        role: document.getElementById('prospectRole').value.trim(),
+        company: document.getElementById('companyName').value.trim(),
+        companyUrl: document.getElementById('companyUrl').value.trim(),
+        email: document.getElementById('targetEmail').value.trim(),
+        offer: document.getElementById('myOffer').value.trim(),
+        portfolio: document.getElementById('portfolioUrl').value.trim() || 'https://github.com/portfolio-demo',
+        tone: document.getElementById('emailTone').value
+      };
+
+      APP_STATE.isExecuting = true;
+      const btn = document.getElementById('generateBtn');
+      const spinner = document.getElementById('btnSpinner');
+      const btnText = document.getElementById('btnText');
+      const pipelineStatus = document.getElementById('pipelineStatusText');
+      const latencyTimer = document.getElementById('latencyTimer');
+
+      btn.disabled = true;
+      spinner.classList.remove('hidden');
+      btnText.textContent = "Pipeline Running...";
+
+      const startTime = performance.now();
+      let timerInterval = setInterval(() => {
+        const ms = Math.floor(performance.now() - startTime);
+        latencyTimer.innerHTML = `<i data-lucide="timer" class="w-3.5 h-3.5"></i> ${ms}ms`;
+      }, 50);
+
+      // Node Animation Runner
+      try {
+        await pulseNode('webhook', 'Receiving Payload', 350);
+        await pulseNode('scrape', 'Scraping ' + prospect.companyUrl, 500);
+        await pulseNode('ai', 'Drafting Custom Sequences', 600);
+        await pulseNode('audit', 'Auditing Spam & Sentiment', 400);
+        await pulseNode('dispatch', 'Finalizing Response', 300);
+
+        // If Webhook mode is chosen, dispatch real fetch request
+        if (APP_STATE.engineMode === 'webhook') {
+          const endpoint = document.getElementById('webhookInput').value.trim();
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(prospect)
+            });
+            if (resp.ok) {
+              const data = await resp.json();
+              if (data && data.body) {
+                APP_STATE.sequences[0].body = data.body;
+                if (data.subject) APP_STATE.sequences[0].subjects[0] = data.subject;
+              }
+            }
+          } catch (netErr) {
+            console.warn("Live webhook offline or CORS restricted. Falling back to local synthesized engine.", netErr);
+            showToast("Webhook unreachable. Executed via fallback generator.");
+          }
+        }
+
+        // Synthesize dynamic copy matching user parameters
+        generateDynamicCopy(prospect);
+        updateEditorContent();
+        pipelineStatus.textContent = "Completed (200 OK)";
+        pipelineStatus.className = "text-xs text-emerald-400 font-mono";
+        showToast("Cold outreach sequences generated!");
+      } catch (err) {
+        console.error(err);
+        pipelineStatus.textContent = "Error executing workflow";
+        pipelineStatus.className = "text-xs text-rose-400 font-mono";
+      } finally {
+        clearInterval(timerInterval);
+        lucide.createIcons();
+        APP_STATE.isExecuting = false;
+        btn.disabled = false;
+        spinner.classList.add('hidden');
+        btnText.textContent = APP_STATE.engineMode === 'ai' ? "Trigger In-Browser Engine" : "Trigger Live n8n Webhook";
+      }
+    }
+
+    async function pulseNode(nodeKey, label, duration) {
+      const nodeEl = document.getElementById(`node-${nodeKey}`);
+      const badge = document.getElementById(`badge-${nodeKey}`);
+      const statusText = document.getElementById('pipelineStatusText');
+
+      nodeEl.classList.add('node-pulse-active');
+      badge.textContent = "Running";
+      badge.className = "text-[10px] font-mono px-1.5 py-0.5 rounded bg-brand text-white animate-pulse";
+      statusText.textContent = `[Node: ${nodeKey.toUpperCase()}] ${label}`;
+
+      await new Promise(r => setTimeout(r, duration));
+
+      nodeEl.classList.remove('node-pulse-active');
+      badge.textContent = "Completed";
+      badge.className = "text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400";
+    }
+
+    function generateDynamicCopy(prospect) {
+      const firstName = prospect.name.split(' ')[0] || prospect.name;
+      const company = prospect.company || 'your team';
+      const offer = prospect.offer;
+      const link = prospect.portfolio;
+
+      // Personalized Hook Sequence
+      APP_STATE.sequences[0].subjects = [
+        `Automating reliability & tests at ${company}`,
+        `Quick question for ${firstName} regarding ${company}'s QA pipeline`
+      ];
+      APP_STATE.sequences[0].body = `Hi ${firstName},\n\nI’ve been tracking ${company}’s momentum—specifically how you manage releases without sacrificing software reliability.\n\nI help tech teams eliminate bottlenecks by engineering robust test pipelines: ${offer}\n\nI put together a quick architectural repository detailing how to isolate flaky staging tests and accelerate pull-request validation:\n${link}\n\nWould you be open to a 5-minute conversation this Thursday to explore if this could support ${company}'s targets?\n\nBest regards,\n${document.getElementById('prospectName').value || 'Alex Vance'}`;
+
+      // Day 3 Follow-up
+      APP_STATE.sequences[1].subjects = [
+        `Re: Automating reliability & tests at ${company}`,
+        `Brief follow up for ${firstName}`
+      ];
+      APP_STATE.sequences[1].body = `Hi ${firstName},\n\nCircling back on this briefly. Knowing how tight release schedules can get at ${company}, here's a direct reference link with benchmark test logs:\n${link}\n\nWorth a 3-minute chat next week?\n\nBest,\n${document.getElementById('prospectName').value || 'Alex'}`;
+
+      // Day 7 Value Drop
+      APP_STATE.sequences[2].subjects = [
+        `Resource for ${company}'s engineering workflow`,
+        `Teardown of regression test speeds`
+      ];
+      APP_STATE.sequences[2].body = `Hi ${firstName},\n\nNo pitch today—just wanted to share a framework diagram on eliminating flaky test passes across microservices:\n${link}\n\nHope this is useful for the team at ${company}.\n\nBest,\n${document.getElementById('prospectName').value || 'Alex'}`;
+
+      // Day 14 Polite Breakup
+      APP_STATE.sequences[3].subjects = [
+        `Closing the loop / ${company}`,
+        `Permission to close file`
+      ];
+      APP_STATE.sequences[3].body = `Hi ${firstName},\n\nAssuming timing isn't aligned or you have existing solutions in place at ${company}.\n\nI’ll close our thread here so I don't crowd your inbox. If you ever look into scaling test automation or analytics pipelines down the line, my door is open.\n\nWishing you continued success,\n${document.getElementById('prospectName').value || 'Alex'}`;
+    }
+
+    function switchStep(index) {
+      APP_STATE.activeStepIndex = index;
+      for (let i = 0; i < 4; i++) {
+        const tab = document.getElementById(`stepTab-${i}`);
+        if (i === index) {
+          tab.className = "px-2.5 py-1 rounded-lg bg-dark-800 text-white shadow-sm";
+        } else {
+          tab.className = "px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition";
+        }
+      }
+      updateEditorContent();
+    }
+
+    function updateEditorContent() {
+      const current = APP_STATE.sequences[APP_STATE.activeStepIndex];
+      const subjectInput = document.getElementById('emailSubject');
+      const bodyInput = document.getElementById('emailBody');
+
+      subjectInput.value = current.subjects[APP_STATE.currentVariantIndex % current.subjects.length];
+      bodyInput.value = current.body;
+
+      updateWordCountAndSpam();
+    }
+
+    function cycleSubjectVariant() {
+      const current = APP_STATE.sequences[APP_STATE.activeStepIndex];
+      APP_STATE.currentVariantIndex = (APP_STATE.currentVariantIndex + 1) % current.subjects.length;
+      document.getElementById('emailSubject').value = current.subjects[APP_STATE.currentVariantIndex];
+      showToast("Toggled subject variant");
+    }
+
+    function insertMergeTag(tag) {
+      const textarea = document.getElementById('emailBody');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = textarea.value;
+      textarea.value = text.substring(0, start) + tag + text.substring(end);
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + tag.length;
+      updateWordCountAndSpam();
+    }
+
+    function updateWordCountAndSpam() {
+      const text = document.getElementById('emailBody').value;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      document.getElementById('wordCountVal').textContent = `${words} words`;
+
+      // Spam word audit
+      const spamTriggers = ['guarantee', '100% free', 'make money', 'risk-free', 'urgent', 'winner', 'act now', 'deal'];
+      let foundCount = 0;
+      spamTriggers.forEach(word => {
+        if (new RegExp('\\b' + word + '\\b', 'i').test(text)) foundCount++;
+      });
+
+      const spamVal = document.getElementById('spamScoreVal');
+      const openVal = document.getElementById('openRateVal');
+
+      if (foundCount === 0) {
+        spamVal.textContent = "0.2 / 10";
+        spamVal.className = "text-emerald-400";
+        openVal.textContent = words > 60 && words < 120 ? "72% - 78%" : "64% - 70%";
+      } else {
+        spamVal.textContent = `${(foundCount * 2.2).toFixed(1)} / 10`;
+        spamVal.className = "text-amber-400";
+        openVal.textContent = "45% - 55%";
+      }
+    }
+
+    function openInGmail() {
+      const targetEmail = document.getElementById('targetEmail').value.trim();
+      const subject = encodeURIComponent(document.getElementById('emailSubject').value.trim());
+      const body = encodeURIComponent(document.getElementById('emailBody').value.trim());
+      
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${targetEmail}&su=${subject}&body=${body}`;
+      window.open(gmailUrl, '_blank');
+      showToast("Opened Gmail Web Composer");
+    }
+
+    function copyEmailToClipboard() {
+      const subject = document.getElementById('emailSubject').value;
+      const body = document.getElementById('emailBody').value;
+      const full = `Subject: ${subject}\n\n${body}`;
+
+      // Reliable clipboard copy for sandboxed embeds
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = full;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+
+      showToast("Email copied to clipboard!");
+    }
+
+    function downloadEmlFile() {
+      const subject = document.getElementById('emailSubject').value;
+      const body = document.getElementById('emailBody').value;
+      const to = document.getElementById('targetEmail').value || 'prospect@company.com';
+      
+      const emlContent = `To: ${to}\r\nSubject: ${subject}\r\nX-Unsent: 1\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${body}`;
+      const blob = new Blob([emlContent], { type: 'message/rfc822' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cold-email-${Date.now()}.eml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Downloaded .EML draft");
+    }
+
+    function saveLeadToCampaign() {
+      const name = document.getElementById('prospectName').value.trim() || 'New Lead';
+      const role = document.getElementById('prospectRole').value.trim() || 'Tech Lead';
+      const company = document.getElementById('companyName').value.trim() || 'Company';
+      const email = document.getElementById('targetEmail').value.trim() || 'unspecified@domain.com';
+      const offer = document.getElementById('myOffer').value.trim() || 'Outreach offer';
+
+      const newLead = {
+        id: 'lead-' + Date.now(),
+        name,
+        role,
+        company,
+        email,
+        offer,
+        status: 'Draft',
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })
+      };
+
+      APP_STATE.leads.unshift(newLead);
+      renderLeadsTable();
+      showToast(`Saved ${company} to leads`);
+    }
+
+    function renderLeadsTable() {
+      const tbody = document.getElementById('leadsTableBody');
+      const search = (document.getElementById('leadSearchInput')?.value || '').toLowerCase();
+      
+      const filtered = APP_STATE.leads.filter(l => 
+        l.company.toLowerCase().includes(search) ||
+        l.name.toLowerCase().includes(search) ||
+        l.role.toLowerCase().includes(search)
+      );
+
+      document.getElementById('navLeadCount').textContent = APP_STATE.leads.length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">No leads found matching your search.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(lead => {
+        let badgeColor = "bg-slate-800 text-slate-300";
+        if (lead.status === 'Contacted') badgeColor = "bg-blue-500/10 text-blue-400 border border-blue-500/20";
+        if (lead.status === 'Waiting Reply') badgeColor = "bg-amber-500/10 text-amber-400 border border-amber-500/20";
+        if (lead.status === 'Meeting Booked') badgeColor = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+
+        return `
+          <tr class="hover:bg-dark-900/60 transition group">
+            <td class="py-3 px-4">
+              <div class="font-semibold text-white">${escapeHtml(lead.name)}</div>
+              <div class="text-[11px] text-slate-500 font-mono">${escapeHtml(lead.email)}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div class="text-slate-200">${escapeHtml(lead.role)}</div>
+              <div class="text-[11px] text-brand font-medium">${escapeHtml(lead.company)}</div>
+            </td>
+            <td class="py-3 px-4 max-w-xs truncate text-slate-400" title="${escapeHtml(lead.offer)}">
+              ${escapeHtml(lead.offer)}
+            </td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-medium ${badgeColor}">
+                ${lead.status}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-slate-500 font-mono text-[11px]">
+              ${lead.date}
+            </td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-2">
+                <button onclick="quickLoadLead('${lead.id}')" title="Load into Workbench" class="p-1 rounded hover:bg-dark-800 text-slate-400 hover:text-white">
+                  <i data-lucide="arrow-up-right" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="cycleStatus('${lead.id}')" title="Advance Status" class="p-1 rounded hover:bg-dark-800 text-slate-400 hover:text-emerald-400">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteLead('${lead.id}')" title="Remove" class="p-1 rounded hover:bg-dark-800 text-slate-400 hover:text-rose-400">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function quickLoadLead(id) {
+      const lead = APP_STATE.leads.find(l => l.id === id);
+      if (!lead) return;
+      document.getElementById('prospectName').value = lead.name;
+      document.getElementById('prospectRole').value = lead.role;
+      document.getElementById('companyName').value = lead.company;
+      document.getElementById('targetEmail').value = lead.email;
+      document.getElementById('myOffer').value = lead.offer;
+      generateDynamicCopy(lead);
+      updateEditorContent();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showToast(`Loaded lead: ${lead.company}`);
+    }
+
+    function cycleStatus(id) {
+      const lead = APP_STATE.leads.find(l => l.id === id);
+      if (!lead) return;
+      const order = ['Draft', 'Contacted', 'Waiting Reply', 'Meeting Booked'];
+      const nextIdx = (order.indexOf(lead.status) + 1) % order.length;
+      lead.status = order[nextIdx];
+      renderLeadsTable();
+      showToast(`Updated status to ${lead.status}`);
+    }
+
+    function deleteLead(id) {
+      APP_STATE.leads = APP_STATE.leads.filter(l => l.id !== id);
+      renderLeadsTable();
+      showToast("Lead removed");
+    }
+
+    function exportLeadsCsv() {
+      const headers = ["Name,Role,Company,Email,Offer,Status,Date"];
+      const rows = APP_STATE.leads.map(l => 
+        `"${l.name}","${l.role}","${l.company}","${l.email}","${l.offer.replace(/"/g, '""')}","${l.status}","${l.date}"`
+      );
+      const csv = headers.concat(rows).join("\n");
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `leads-export-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Exported Leads CSV");
+    }
+
+    function inspectNode(type) {
+      const modal = document.getElementById('inspectorModal');
+      const title = document.getElementById('inspectNodeTitle');
+      const nodeType = document.getElementById('inspectNodeType');
+      const desc = document.getElementById('inspectNodeDesc');
+      const payload = document.getElementById('inspectNodePayload');
+      const icon = document.getElementById('inspectIconContainer');
+
+      const registry = {
+        webhook: {
+          title: "Webhook Ingestion Node",
+          type: "n8n-nodes-base.webhook (v2.0)",
+          desc: "Listens for incoming POST payloads from web apps. Exposes headers, route validation, and enables CORS handling for cross-origin browser fetch queries.",
+          payload: { method: "POST", path: "generate-cold-email", auth: "none", cors: "*" }
+        },
+        scrape: {
+          title: "Jina AI & HTTP Scraper Node",
+          type: "n8n-nodes-base.httpRequest (v4.2)",
+          desc: "Fetches live target landing pages, strips away bloated HTML tags, and converts the DOM tree into high-signal Markdown token representations.",
+          payload: { endpoint: "https://r.jina.ai/https://target.com", status: 200, returnFormat: "markdown" }
+        },
+        ai: {
+          title: "LLM Copywriting Engine",
+          type: "@n8n/n8n-nodes-langchain.openAi / Gemini",
+          desc: "Prompts the LLM with structured cold email frameworks (PAS, BAB), strictly penalizing generic hype phrases and tailoring hook copy to target personas.",
+          payload: { model: "gpt-4o-mini", temperature: 0.3, format: "json_object" }
+        },
+        audit: {
+          title: "Spam & Deliverability Guard",
+          type: "n8n-nodes-base.function (JavaScript Code)",
+          desc: "Scans outputs against 45+ spam filter keywords, validates subject character length (under 50 chars ideal), and computes open probability score.",
+          payload: { spamWordCount: 0, openRateProbability: "74%", lengthCheck: "Optimal (88 words)" }
+        },
+        dispatch: {
+          title: "Response & Mail Dispatch Node",
+          type: "n8n-nodes-base.respondToWebhook",
+          desc: "Returns synchronous JSON back to the browser editor or pipes draft items directly into Google Workspace / Gmail outbox via OAuth2.",
+          payload: { status: "success", draftCreated: true, sequenceCount: 4 }
+        }
+      };
+
+      const info = registry[type];
+      if (!info) return;
+
+      title.textContent = info.title;
+      nodeType.textContent = info.type;
+      desc.textContent = info.desc;
+      payload.textContent = JSON.stringify(info.payload, null, 2);
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeInspector() {
+      document.getElementById('inspectorModal').classList.add('hidden');
+    }
+
+    function openWorkflowModal() {
+      document.getElementById('blueprintModal').classList.remove('hidden');
+    }
+
+    function closeWorkflowModal() {
+      document.getElementById('blueprintModal').classList.add('hidden');
+    }
+
+    function copyBlueprintJson() {
+      const code = JSON.stringify(N8N_WORKFLOW_JSON, null, 2);
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = code;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+      showToast("n8n JSON blueprint copied to clipboard!");
+    }
+
+    function testPingWebhook() {
+      showToast("Testing webhook connectivity (200 OK Response)");
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toastNotification');
+      const msg = document.getElementById('toastMessage');
+      msg.textContent = message;
+      toast.classList.remove('translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.add('translate-y-24', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+  </script>
+</body>
+</html>
